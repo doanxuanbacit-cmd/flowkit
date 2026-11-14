@@ -36,7 +36,15 @@ Clip trung gian được cache theo nội dung: sửa 1 clip chỉ render lại 
 
 ## Cài đặt & chạy
 
-**Cách nhanh (khuyên dùng) — 1 lệnh, macOS / Linux / Windows WSL:**
+**Máy Mac — không cần biết kỹ thuật (khuyên dùng):** mở Terminal, dán 1 dòng:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/doanxuanbacit-cmd/flowkit/feat/studio-v4-p0/install-mac.sh | bash
+```
+
+Không cần mật khẩu hay Homebrew/Git/Node. Cài vào `~/XuanBacStudio`, tạo 3 biểu tượng Desktop (Mở / Tắt / Cập nhật). "Mở" chạy Studio tại http://127.0.0.1:8100/studio và mở một Chrome riêng đã nạp sẵn extension FlowKit — chỉ cần đăng nhập Google ở flow.google.com lần đầu.
+
+**Dành cho lập trình viên — macOS / Linux / Windows WSL:**
 
 ```bash
 git clone -b feat/studio-v4-p0 https://github.com/doanxuanbacit-cmd/flowkit.git
