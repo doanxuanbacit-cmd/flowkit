@@ -529,6 +529,23 @@ async def test_direct(request: Request):
         return {"ok": False, "error": str(e)}
 
 
+# ── Dashboard đã build sẵn (dashboard/dist): phục vụ ngay trên :8100 để máy
+# người dùng không cần Node/Vite. Đăng ký CUỐI CÙNG để không che route API.
+from pathlib import Path as _Path
+from fastapi.responses import FileResponse as _FileResponse
+
+_DIST = (_Path(__file__).resolve().parent.parent / "dashboard" / "dist")
+if (_DIST / "index.html").is_file():
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def _dashboard_spa(full_path: str):
+        if full_path.startswith(("api/", "ws/")) or full_path in ("api", "ws", "health"):
+            raise HTTPException(status_code=404)
+        target = (_DIST / full_path).resolve()
+        if full_path and target.is_file() and _DIST in target.parents:
+            return _FileResponse(target)
+        return _FileResponse(_DIST / "index.html", headers={"Cache-Control": "no-cache"})
+
+
 if __name__ == "__main__":
     import os
     import uvicorn
