@@ -39,3 +39,4 @@ series_manifest.json
 # Studio V4 runtime data (assets, renders, cache, studio.db)
 studio_data/
 .venv/
+.studio-run/

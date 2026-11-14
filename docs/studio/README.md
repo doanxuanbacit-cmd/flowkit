@@ -36,6 +36,16 @@ Clip trung gian được cache theo nội dung: sửa 1 clip chỉ render lại 
 
 ## Cài đặt & chạy
 
+**Cách nhanh (khuyên dùng) — 1 lệnh, macOS / Linux / Windows WSL:**
+
+```bash
+git clone -b feat/studio-v4-p0 https://github.com/doanxuanbacit-cmd/flowkit.git
+cd flowkit && bash studio.sh        # lần đầu tự cài Python/FFmpeg/Node + thư viện, tạo khoá .env, chạy và mở Studio
+bash studio.sh stop | status | logs | restart
+```
+
+Cách thủ công:
+
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
 # tuỳ chọn: ASR tiếng Việt cho phụ đề tự động
