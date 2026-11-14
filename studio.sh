@@ -4,6 +4,7 @@
 #   bash studio.sh stop       # dừng backend + dashboard
 #   bash studio.sh status     # kiểm tra tình trạng
 #   bash studio.sh logs       # xem log backend
+#   bash studio.sh extension  # chuẩn bị cài extension Google Flow
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT="$PWD"
@@ -128,18 +129,57 @@ status() {
   if echo "$h" | grep -q '"extension_connected": *true'; then
     ok "Extension Google Flow: đã kết nối"
   elif [ -n "$h" ]; then
-    warn "Extension Google Flow: CHƯA kết nối — làm 2 việc dưới đây:"
-    echo "   1) Chrome → chrome://extensions → bật Developer mode → Load unpacked → chọn: $ROOT/extension"
-    echo "   2) Mở và đăng nhập https://flow.google.com (để tab mở). Dựng/duyệt/xuất video vẫn dùng được khi chưa kết nối."
+    warn "Extension Google Flow: CHƯA kết nối → chạy: bash studio.sh extension"
+    echo "   (Dựng/duyệt/xuất video vẫn dùng được khi chưa kết nối.)"
   fi
 }
 
+# ───────────────────────── extension Chrome ─────────────────────────
+# Chrome không cho cài extension unpacked tự động (cờ --load-extension đã bị bỏ
+# trên Chrome thường). Ta chép ra thư mục Chrome chắc chắn đọc được, mở sẵn
+# chrome://extensions + cửa sổ thư mục → chỉ còn kéo thả.
+extension() {
+  local dest win=""
+  if grep -qi microsoft /proc/version 2>/dev/null; then          # Windows WSL
+    local wuser; wuser=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
+    [ -n "$wuser" ] && [ -d "/mnt/c/Users/$wuser" ] || die "Không tìm thấy thư mục Windows của người dùng."
+    dest="/mnt/c/Users/$wuser/FlowKitExtension"; win="C:\\Users\\$wuser\\FlowKitExtension"
+  elif [ "$OS" = "Darwin" ]; then dest="$HOME/FlowKitExtension"
+  else dest="$HOME/FlowKitExtension"; fi
+  rm -rf "$dest"; mkdir -p "$dest"; cp -R "$ROOT/extension/." "$dest/"
+  [ -f "$dest/manifest.json" ] || die "Chép extension thất bại."
+  local show="${win:-$dest}"
+  ok "Extension đã chép ra: $show"
+  if [ "$OS" = "Darwin" ]; then
+    printf %s "$dest" | pbcopy
+    open -a "Google Chrome" "chrome://extensions" 2>/dev/null || true
+    open "$dest"
+  elif [ -n "$win" ]; then
+    printf %s "$win" | clip.exe 2>/dev/null || true
+    explorer.exe "$win" 2>/dev/null || true
+    cmd.exe /c start chrome "chrome://extensions" 2>/dev/null || true
+  else
+    (has google-chrome && google-chrome chrome://extensions >/dev/null 2>&1 &) || true
+    has xdg-open && xdg-open "$dest" >/dev/null 2>&1 || true
+  fi
+  cat <<EOF
+
+  Trong trang chrome://extensions vừa mở:
+   1) Bật "Developer mode" (góc trên bên phải).
+   2) KÉO thư mục FlowKitExtension từ cửa sổ thư mục vừa mở THẢ vào trang đó
+      (hoặc bấm "Load unpacked" → dán đường dẫn đã copy sẵn: $show).
+   3) Mở https://flow.google.com, đăng nhập, để tab mở. Bấm F5 tab Flow một lần.
+  Kiểm tra: bash studio.sh status  →  "Extension Google Flow: đã kết nối"
+EOF
+}
+
 case "${1:-up}" in
+  extension|ext) extension ;;
   up|start)  if [ ! -f "$RUN/py.ok" ] || [ ! -f "$RUN/js.ok" ]; then install_sys; check_versions; fi; install_app; start ;;
   install)   install_sys; check_versions; install_app ;;
   stop)      stop ;;
   restart)   stop; start ;;
   status)    status ;;
   logs)      tail -n 100 -f "$RUN/api.log" ;;
-  *)         echo "Dùng: bash studio.sh [up|stop|restart|status|logs|install]" ;;
+  *)         echo "Dùng: bash studio.sh [up|stop|restart|status|logs|install|extension]" ;;
 esac
