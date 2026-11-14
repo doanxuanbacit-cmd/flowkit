@@ -33,6 +33,7 @@ from agent.worker.processor import get_worker_controller
 from agent.services.flow_client import get_flow_client
 from agent.services.event_bus import event_bus
 from agent.sdk import init_sdk
+from agent.config import STUDIO_ENABLED
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -111,7 +112,16 @@ async def lifespan(app: FastAPI):
     worker_task = asyncio.create_task(controller.start())
     logger.info("WS server + worker started")
 
+    if STUDIO_ENABLED:
+        from studio.api import start_background as studio_start
+        studio_start(asyncio.get_running_loop())
+        logger.info("Studio V4 render + publish workers started")
+
     yield
+
+    if STUDIO_ENABLED:
+        from studio.api import stop_background as studio_stop
+        studio_stop()
 
     controller.request_shutdown()
     await controller.drain()
@@ -209,6 +219,10 @@ app.include_router(provider_jobs_router, prefix="/api")
 app.include_router(models_router)
 app.include_router(providers_router)
 app.include_router(active_project_router)
+
+if STUDIO_ENABLED:
+    from studio.api import router as studio_router
+    app.include_router(studio_router)
 
 
 _CALLBACK_SECRET = secrets.token_urlsafe(32)
@@ -513,6 +527,23 @@ async def test_direct(request: Request):
     except Exception as e:
         logger.exception("test_direct failed: %s", e)
         return {"ok": False, "error": str(e)}
+
+
+# ── Dashboard đã build sẵn (dashboard/dist): phục vụ ngay trên :8100 để máy
+# người dùng không cần Node/Vite. Đăng ký CUỐI CÙNG để không che route API.
+from pathlib import Path as _Path
+from fastapi.responses import FileResponse as _FileResponse
+
+_DIST = (_Path(__file__).resolve().parent.parent / "dashboard" / "dist")
+if (_DIST / "index.html").is_file():
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def _dashboard_spa(full_path: str):
+        if full_path.startswith(("api/", "ws/")) or full_path in ("api", "ws", "health"):
+            raise HTTPException(status_code=404)
+        target = (_DIST / full_path).resolve()
+        if full_path and target.is_file() and _DIST in target.parents:
+            return _FileResponse(target)
+        return _FileResponse(_DIST / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 if __name__ == "__main__":

@@ -91,4 +91,20 @@ jobs:
       - name: Run unit tests
         env:
           PYTHONUNBUFFERED: "1"
-        run: python -m pytest tests/unit -q
+        run: python -m pytest tests/unit tests/studio -q
+
+  dashboard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # package-lock.json is out of sync upstream; install without rewriting it.
+      - run: npm install --no-audit --no-fund --no-package-lock
+      - run: npx eslint src/studio src/App.tsx
+      - run: npm run build
