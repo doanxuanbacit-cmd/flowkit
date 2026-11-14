@@ -33,6 +33,7 @@ from agent.worker.processor import get_worker_controller
 from agent.services.flow_client import get_flow_client
 from agent.services.event_bus import event_bus
 from agent.sdk import init_sdk
+from agent.config import STUDIO_ENABLED
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -111,7 +112,16 @@ async def lifespan(app: FastAPI):
     worker_task = asyncio.create_task(controller.start())
     logger.info("WS server + worker started")
 
+    if STUDIO_ENABLED:
+        from studio.api import start_background as studio_start
+        studio_start(asyncio.get_running_loop())
+        logger.info("Studio V4 render + publish workers started")
+
     yield
+
+    if STUDIO_ENABLED:
+        from studio.api import stop_background as studio_stop
+        studio_stop()
 
     controller.request_shutdown()
     await controller.drain()
@@ -209,6 +219,10 @@ app.include_router(provider_jobs_router, prefix="/api")
 app.include_router(models_router)
 app.include_router(providers_router)
 app.include_router(active_project_router)
+
+if STUDIO_ENABLED:
+    from studio.api import router as studio_router
+    app.include_router(studio_router)
 
 
 _CALLBACK_SECRET = secrets.token_urlsafe(32)

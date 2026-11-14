@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, NavLink, Routes, Route, useLocation, useParams, useSearchParams } from 'react-router-dom'
-import { LayoutDashboard, FolderOpen, Film, ScrollText, BookOpen, SlidersHorizontal, Globe } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, Film, ScrollText, BookOpen, SlidersHorizontal, Globe, Sparkles, Scissors, Library, ShieldCheck, Send } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { WebSocketProvider } from './api/WebSocketContext'
 import { useWebSocketContext } from './api/useWebSocketContext'
@@ -16,6 +16,23 @@ import LogsPage from './pages/LogsPage'
 import GalleryPage from './pages/GalleryPage'
 import GuidePage from './pages/GuidePage'
 import SettingsPage from './pages/SettingsPage'
+import StudioOverview from './studio/StudioOverview'
+import EditorPage from './studio/EditorPage'
+import AssetsPage from './studio/AssetsPage'
+import QAPage from './studio/QAPage'
+import PublishingPage from './studio/PublishingPage'
+
+const STUDIO_NAV: { to: string; icon: typeof LayoutDashboard; label: string }[] = [
+  { to: '/studio', icon: Sparkles, label: 'Studio Overview' },
+  { to: '/studio/editor', icon: Scissors, label: 'Professional Editor' },
+  { to: '/studio/assets', icon: Library, label: 'Asset Library' },
+  { to: '/studio/qa', icon: ShieldCheck, label: 'Render · QA · Duyệt' },
+  { to: '/studio/publish', icon: Send, label: 'Auto Publisher' },
+]
+const STUDIO_CRUMB: Record<string, string> = {
+  '/studio': 'Overview', '/studio/editor': 'Professional Editor', '/studio/assets': 'Asset Library',
+  '/studio/qa': 'Render · QA', '/studio/publish': 'Auto Publisher',
+}
 
 const NAV: { to: string; icon: typeof LayoutDashboard; labelKey: TranslationKey; exact: boolean }[] = [
   { to: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard', exact: true },
@@ -68,6 +85,7 @@ function useBreadcrumbs() {
   else if (loc.pathname.startsWith('/logs')) crumbs.push(t('app.breadcrumb.logs'))
   else if (loc.pathname.startsWith('/guide')) crumbs.push(t('app.breadcrumb.guide'))
   else if (loc.pathname.startsWith('/settings')) crumbs.push(t('app.breadcrumb.settings'))
+  else if (loc.pathname.startsWith('/studio')) crumbs.push('Studio V4', STUDIO_CRUMB[loc.pathname] ?? '')
 
   return crumbs
 }
@@ -105,7 +123,7 @@ function Sidebar() {
   }, [])
 
   return (
-    <aside className="w-52 flex-shrink-0 flex flex-col border-r" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+    <aside className="w-52 flex-shrink-0 hidden md:flex flex-col border-r" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
       <div className="px-4 py-4 flex items-center gap-2.5 border-b" style={{ borderColor: 'var(--border)' }}>
         <span className="w-[22px] h-[22px] rounded flex items-center justify-center text-xs font-bold" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>F</span>
         <div className="flex flex-col">
@@ -129,6 +147,23 @@ function Sidebar() {
           >
             <Icon size={13} />
             {t(labelKey)}
+          </NavLink>
+        ))}
+        <div className="mt-3 mb-1 px-2.5 text-[9px] tracking-widest uppercase" style={{ color: 'var(--muted)' }}>Studio V4</div>
+        {STUDIO_NAV.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/studio'}
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded text-xs transition-colors hover:opacity-90"
+            style={({ isActive }) => ({
+              background: isActive ? 'var(--card)' : 'transparent',
+              color: isActive ? 'var(--text)' : 'var(--muted)',
+              borderLeft: `2px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
+            })}
+          >
+            <Icon size={13} />
+            {label}
           </NavLink>
         ))}
       </nav>
@@ -199,12 +234,28 @@ function Header() {
   )
 }
 
+function MobileNav() {
+  const { t } = useTranslation()
+  const items = [...NAV.map(n => ({ to: n.to, label: t(n.labelKey), exact: n.exact })), ...STUDIO_NAV.map(n => ({ to: n.to, label: n.label, exact: n.to === '/studio' }))]
+  return (
+    <nav aria-label="Mobile" className="md:hidden flex gap-1 overflow-x-auto px-3 py-2 border-b" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+      {items.map(i => (
+        <NavLink key={i.to} to={i.to} end={i.exact} className="px-2.5 py-1 rounded text-[11px] whitespace-nowrap"
+          style={({ isActive }) => ({ background: isActive ? 'var(--card)' : 'transparent', color: isActive ? 'var(--text)' : 'var(--muted)' })}>
+          {i.label}
+        </NavLink>
+      ))}
+    </nav>
+  )
+}
+
 function Layout() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header />
+        <MobileNav />
         <main className="flex-1 overflow-auto p-5">
           <Routes>
             <Route path="/" element={<DashboardPage />} />
@@ -214,6 +265,11 @@ function Layout() {
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/guide" element={<GuidePage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/studio" element={<StudioOverview />} />
+            <Route path="/studio/editor" element={<EditorPage />} />
+            <Route path="/studio/assets" element={<AssetsPage />} />
+            <Route path="/studio/qa" element={<QAPage />} />
+            <Route path="/studio/publish" element={<PublishingPage />} />
           </Routes>
         </main>
       </div>

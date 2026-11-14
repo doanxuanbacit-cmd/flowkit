@@ -19,6 +19,9 @@ FLOWKIT_ALLOWED_HOSTS = [
     h.strip().lower() for h in os.environ.get("FLOWKIT_ALLOWED_HOSTS", "").split(",") if h.strip()
 ]
 
+# Xuân Bắc AI Video Studio V4 (editing engine, QA/approval, auto publisher).
+STUDIO_ENABLED = os.environ.get("STUDIO_ENABLED", "1") == "1"
+
 # ─── WebSocket Server (extension connects here) ─────────────
 WS_HOST = os.environ.get("WS_HOST", "127.0.0.1")
 WS_PORT = int(os.environ.get("WS_PORT", "9222"))

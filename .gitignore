@@ -35,3 +35,7 @@ flow_session_project.json
 scratch/
 
 series_manifest.json
+
+# Studio V4 runtime data (assets, renders, cache, studio.db)
+studio_data/
+.venv/
